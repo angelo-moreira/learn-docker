@@ -1,0 +1,43 @@
+# docker build -t elixir-dev .
+# docker container run -it -d -p 4000:4000 --name web-testing elixir-dev sh
+# docker exec -it web-testing sh
+FROM elixir:1.5-alpine
+
+# Upgrade all packages
+RUN \
+    apk --no-cache --update upgrade && \
+    apk --no-cache --update add \
+      git make g++ wget curl inotify-tools \
+      nodejs nodejs-npm && \
+    npm install npm -g --no-progress && \
+    update-ca-certificates --fresh && \
+    rm -rf /var/cache/apk/*
+
+# Install hex and rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Install Phoenix
+RUN mix archive.install --force https://github.com/phoenixframework/archives/raw/master/phoenix_new.ez
+
+# Add local node module binaries to PATH
+ENV PATH=./node_modules/.bin:$PATH
+
+WORKDIR /app
+COPY . /app
+
+RUN mix deps.get && \
+    npm install && \
+    MIX_ENV=prod PORT=4001 elixir --detached -S mix phoenix.server
+
+CMD ["foreground"]
+# ENV MIX_ENV dev
+# ENV PORT 4000
+
+# EXPOSE $PORT
+
+
+# CMD trap exit TERM; bin/start foreground & wait
+
+
+# run "mix deps.get
