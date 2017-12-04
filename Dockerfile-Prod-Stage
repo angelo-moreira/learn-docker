@@ -1,0 +1,12 @@
+# docker build --file Dockerfile-Prod-Stage -t designone-prod-stage .
+
+FROM elixir:1.5-alpine
+LABEL maintainer="Angelo Moreira <angelo.m@designone.co.uk>"
+
+ENV APP_VERSION=0.1
+ENV MIX_ENV=prod
+
+RUN apk --update upgrade && apk add --no-cache build-base curl
+RUN mix local.hex --force && mix local.rebar --force
+
+WORKDIR /build

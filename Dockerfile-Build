@@ -2,63 +2,16 @@
 # docker container run -i elixir-docker-guide
 # docker exec -it docker-guide-container sh
 
-#===========
-#Build Stage
-#===========
-FROM elixir:1.5-alpine as build
-LABEL maintainer="Angelo Moreira <angelo.m@designone.co.uk>"
-
-ENV APP_VERSION=0.1
-ENV MIX_ENV=prod
-
-RUN apk --update upgrade && apk add --no-cache build-base curl
-RUN mix local.hex --force && mix local.rebar --force
-
-WORKDIR /build
+FROM designone-prod-stage as build
 
 COPY . .
 RUN mix deps.get && mix release
 
+# ------------------------------------------
 
-
-
-#================
-#Deployment Stage
-#================
-FROM alpine:3.6
-
-#Install Dependencies for Erlang
-RUN apk add --no-cache \
-    ncurses-libs \
-    zlib \
-    openssl \
-    ca-certificates && \
-    update-ca-certificates --fresh
-
-#Install bash which is required by Distillery
-RUN apk add --no-cache bash
-
-ENV APP_HOME=/app
-ENV APP_USER=app
-
-#Create /opt/app directory and default user
-RUN mkdir -p ${APP_HOME} && \
-    adduser -s /bin/sh -u 1001 -G root -h ${APP_HOME} -S -D ${APP_USER} && \
-    chown -R 1001:0 ${APP_HOME} && \
-    apk --no-cache upgrade
-
-#Change user
-USER ${APP_USER}
-WORKDIR ${APP_HOME} 
-
-EXPOSE 4000
-ENV REPLACE_OS_VARS=true \
-    PORT=4000
-
+FROM designone-prod-build
 #Copy and extract .tar.gz Release file from the previous stage
 COPY --from=build /build/_build/prod/rel/clock/ .
 
-
-#Set default entrypoint and command
 ENTRYPOINT ["/opt/app/bin/clock"]
 CMD ["foreground"]

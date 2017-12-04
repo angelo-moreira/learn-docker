@@ -1,0 +1,35 @@
+# docker build --file Dockerfile-Prod-Build -t designone-prod-build .
+
+#================
+#Deployment Stage
+#================
+FROM alpine:3.6
+
+#Install Dependencies for Erlang
+RUN apk add --no-cache \
+	ncurses-libs \
+	zlib \
+	openssl \
+	ca-certificates && \
+	update-ca-certificates --fresh
+
+#Install bash which is required by Distillery
+RUN apk add --no-cache bash
+
+ENV APP_HOME=/app
+ENV APP_USER=app
+
+#Create /opt/app directory and default user
+RUN mkdir -p ${APP_HOME} && \
+	adduser -s /bin/sh -u 1001 -G root -h ${APP_HOME} -S -D ${APP_USER} && \
+	chown -R 1001:0 ${APP_HOME} && \
+	apk --no-cache upgrade
+
+#Change user
+USER ${APP_USER}
+WORKDIR ${APP_HOME} 
+
+EXPOSE 4000
+ENV REPLACE_OS_VARS=true \
+	PORT=4000
+
